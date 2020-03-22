@@ -8,6 +8,13 @@ SAS Forum
 https://tinyurl.com/uckrv7v
 https://communities.sas.com/t5/SAS-Programming/Summation-of-the-first-5-highest-observations/m-p/633758
 
+  Two solutions
+
+       a. proc summary
+       b. hash
+          Paul Dorfman
+          sashole@bellsouth.net
+
 *_                   _
 (_)_ __  _ __  _   _| |_
 | | '_ \| '_ \| | | | __|
@@ -69,7 +76,6 @@ Obs    GVKEY     FY        TA       |    1311    1995    3311.66    1599.23     
  18    84578    1995     848.66     |
  19    84578    1995    1067.57     |
 
-
 *            _               _
   ___  _   _| |_ _ __  _   _| |_
  / _ \| | | | __| '_ \| | | | __|
@@ -77,6 +83,8 @@ Obs    GVKEY     FY        TA       |    1311    1995    3311.66    1599.23     
  \___/ \__,_|\__| .__/ \__,_|\__|
                 |_|
 ;
+
+* SAME for means ans hash;
 
 Up to 40 obs from WANT total obs=3
 
@@ -86,13 +94,17 @@ Obs    GVKEY     FY       TA_1       TA_2       TA_3
  2      1700    1996    4182.83    2068.55    1727.07
  3     84578    1995    3700.93    1312.85    1131.18
 
-
 *
  _ __  _ __ ___   ___ ___  ___ ___
 | '_ \| '__/ _ \ / __/ _ \/ __/ __|
 | |_) | | | (_) | (_|  __/\__ \__ \
 | .__/|_|  \___/ \___\___||___/___/
 |_|
+ ___ _   _ _ __ ___  _ __ ___   __ _ _ __ _   _
+/ __| | | | '_ ` _ \| '_ ` _ \ / _` | '__| | | |
+\__ \ |_| | | | | | | | | | | | (_| | |  | |_| |
+|___/\__,_|_| |_| |_|_| |_| |_|\__,_|_|   \__, |
+                                          |___/
 ;
 
 proc means data=have nway noprint ;
@@ -102,7 +114,6 @@ output out=want(drop=_:) idgroup ( max(ta) out[3] (ta)=) /autolabel autoname;
 run;
 
 * if you want it long and skinny
-
 proc transpose data=want;
 by gvkey fy;
 run;quit;
@@ -120,5 +131,35 @@ Obs    GVKEY     FY     _NAME_      COL1
  7     84578    1995     TA_1     3700.93
  8     84578    1995     TA_2     1312.85
  9     84578    1995     TA_3     1131.18
+
+*_               _
+| |__   __ _ ___| |__
+| '_ \ / _` / __| '_ \
+| | | | (_| \__ \ | | |
+|_| |_|\__,_|___/_| |_|
+
+;
+
+data want (drop = ta) ;
+  if _n_ = 1 then do ;
+    dcl hash h (ordered:"D") ;
+    h.definekey ("TA") ;
+    h.definedone () ;
+    dcl hiter hi ("h") ;
+  end ;
+  do until (last.fy) ;
+    set have ;
+    by gvkey fy ;
+    h.ref() ;
+  end ;
+  array TA_ [3] ;
+  do _n_ = 1 to dim (ta_) while (hi.next() = 0) ;
+    ta_[_n_] = ta ;
+  end ;
+  _n_ = hi.first() ;
+  _n_ = hi.prev() ;
+  h.clear() ;
+run ; quit ;
+
 
 
